@@ -1,0 +1,3 @@
+dependencies=test-manager;mutable
+maintype-test=jpkg.collection.set.MultiSetTest
+output-jar=bin/multiset-${branch}.jar
