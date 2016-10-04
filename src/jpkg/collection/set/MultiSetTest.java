@@ -7,6 +7,7 @@ import java.util.Iterator;
 
 import org.junit.Test;
 
+import jpkg.mutable.MutablesTest;
 import jpkg.test.TestManager;
 
 public class MultiSetTest {
@@ -18,6 +19,9 @@ public class MultiSetTest {
 	
 	public static void test() {
 		TestManager.addTest(MultiSetTest.class);
+		
+		// Test dependencies
+		MutablesTest.test();
 	}
 	
 	@Test

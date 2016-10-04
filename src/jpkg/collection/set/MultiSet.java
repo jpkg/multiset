@@ -1,5 +1,6 @@
 package jpkg.collection.set;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -14,7 +15,10 @@ import jpkg.mutable.MutableInteger;
  *
  * @param <T> Type held in this multiset
  */
-public class MultiSet<T> implements Collection<T> {
+public class MultiSet<T> implements Collection<T>, Serializable {
+
+	private static final long serialVersionUID = -64069305605773622L;
+	
 	private HashMap<T, MutableInteger> elements;
 	private int count = 0;
 	
@@ -183,5 +187,27 @@ public class MultiSet<T> implements Collection<T> {
 		return ret.toArray(arg0);
 	}
 	
+	@Override
+	@SuppressWarnings("rawtypes")
+	public boolean equals(Object another) {
+		MultiSet m;
+		
+		if(another instanceof MultiSet)
+			m = (MultiSet) another;
+		else return false;
+		
+		if(m.count == this.count && m.elements.equals(this.elements))
+			return true;
+		return false;
+	}
 	
+	@Override
+	public String toString() {
+		return this.elements.toString();
+	}
+	
+	@Override
+	public int hashCode() {
+		return elements.hashCode() ^ (count * 31);
+	}
 }
