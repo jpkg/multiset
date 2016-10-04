@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map.Entry;
+import java.util.Random;
 
 import jpkg.mutable.MutableInteger;
 
@@ -209,5 +211,28 @@ public class MultiSet<T> implements Collection<T>, Serializable {
 	@Override
 	public int hashCode() {
 		return elements.hashCode() ^ (count * 31);
+	}
+	
+	/**
+	 * Pick a random element from this multiset.
+	 * 
+	 * @param rnd
+	 * @return
+	 */
+	public T getRandomElement(Random rnd) {
+		int index = rnd.nextInt(count);
+		
+		Iterator<Entry<T, MutableInteger>> iter = elements.entrySet().iterator();
+		
+		while(iter.hasNext()) {
+			Entry<T, MutableInteger> elem = iter.next();
+			
+			index -= elem.getValue().get();
+			
+			if(index <= 0)
+				return elem.getKey();
+		}
+		
+		throw new AssertionError();
 	}
 }
