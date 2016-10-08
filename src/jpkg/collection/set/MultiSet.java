@@ -3,10 +3,15 @@ package jpkg.collection.set;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.Random;
+
+import com.koloboke.collect.ObjCursor;
+import com.koloboke.collect.map.hash.HashObjIntMap;
+import com.koloboke.collect.map.hash.HashObjIntMapFactory;
+import com.koloboke.collect.map.hash.HashObjIntMaps;
+import com.koloboke.function.ObjIntConsumer;
 
 import jpkg.mutable.MutableInteger;
 
@@ -21,14 +26,14 @@ public class MultiSet<T> implements Collection<T>, Serializable {
 
 	private static final long serialVersionUID = -64069305605773622L;
 	
-	private HashMap<T, MutableInteger> elements;
+	private HashObjIntMap<T> elements;
 	private int count = 0;
 	
 	/**
 	 * Constructs a new MultiSet
 	 */
 	public MultiSet() {
-		elements = new HashMap<>();
+		elements = HashObjIntMaps.newMutableMap();
 	}
 	
 	/**
@@ -36,18 +41,14 @@ public class MultiSet<T> implements Collection<T>, Serializable {
 	 * @param initialCapacity
 	 */
 	public MultiSet(int initialCapacity) {
-		elements = new HashMap<>(initialCapacity);
+		elements = HashObjIntMaps.newMutableMap(initialCapacity);
 	}
 
 	@Override
 	public boolean add(T arg0) {
 		count++;
 		
-		MutableInteger i = elements.get(arg0);
-		if(i == null)
-			elements.put(arg0, new MutableInteger(1));
-		else
-			i.increment();
+		elements.addValue(arg0, 1, 0);
 		
 		return true;
 	}
@@ -93,31 +94,28 @@ public class MultiSet<T> implements Collection<T>, Serializable {
 		return new MultiSetIterator(elements);
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public boolean remove(Object arg0) {
-		
-		MutableInteger i = elements.get(arg0);
-		if(i == null) {
+
+		if(!elements.containsKey(arg0)) {
 			return false;
 		} else {
+			int i = elements.getInt(arg0);
 			count--;
-			if(i.get() <= 1)
-				elements.remove(arg0);
-			else i.decrement();
-			
-			return true;
+			if(i <= 1)
+				elements.removeAsInt(arg0);
+			else
+				elements.replace((T) arg0, i - 1);
 		}
+		
+		return true;
 	}
 	
 	public boolean removeAllOf(Object arg0) {
-		MutableInteger i = elements.get(arg0);
-		if(i == null) {
-			return false;
-		} else {
-			elements.remove(arg0);
-			count -= i.get();
-			return true;
-		}
+		count -= elements.getOrDefault(arg0, 0);
+		elements.removeAsInt(arg0);
+		return true;
 	}
 
 	@SuppressWarnings("rawtypes")
@@ -136,18 +134,18 @@ public class MultiSet<T> implements Collection<T>, Serializable {
 	@Override
 	@SuppressWarnings("rawtypes")
 	public boolean retainAll(Collection arg0) {
-		HashMap<T, MutableInteger> newmap = new HashMap<>();
+		HashObjIntMap<T> newmap = HashObjIntMaps.newMutableMap(elements.size());
 		int newcount = 0;
 		@SuppressWarnings("unchecked")
 		Iterator<T> i = arg0.iterator();
 		while(i.hasNext()) {
 			T o = i.next();
 			
-			MutableInteger e = elements.get(o);
 			
-			if(e != null) {
+			if(elements.containsKey(o)) {
+				int e = elements.getInt(o);
 				newmap.put(o, e);
-				newcount += e.get();
+				newcount += e;
 			}
 		}
 		
@@ -165,26 +163,25 @@ public class MultiSet<T> implements Collection<T>, Serializable {
 		return count;
 	}
 
+	@SuppressWarnings("deprecation")
 	@Override
 	public Object[] toArray() {
 		final ArrayList<Object> ret = new ArrayList<>(count);
-		elements.forEach((a, b) -> {
-			for(int i = 0; i < ((MutableInteger) b).get(); i++)
-				ret.add(a);
-			}
-		);
+		elements.forEach((ObjIntConsumer<T>) (arg0, arg1) -> {
+			for(int i = 0; i < arg1; i++)
+				ret.add(arg0);
+		});
 		
 		return ret.toArray();
 	}
 
 	@Override
 	public <U> U[] toArray(U[] arg0) {
-		final ArrayList<Object> ret = new ArrayList<>(count);
-		elements.forEach((a, b) -> {
-			for(int i = 0; i < ((MutableInteger) b).get(); i++)
-				ret.add(a);
-			}
-		);
+		final ArrayList<U> ret = new ArrayList<>(count);
+		elements.forEach((ObjIntConsumer<T>) (a, b) -> {
+			for(int i = 0; i < b; i++)
+				ret.add((U) a);
+		});
 		
 		return ret.toArray(arg0);
 	}
@@ -222,12 +219,12 @@ public class MultiSet<T> implements Collection<T>, Serializable {
 	public T getRandomElement(Random rnd) {
 		int index = rnd.nextInt(count);
 		
-		Iterator<Entry<T, MutableInteger>> iter = elements.entrySet().iterator();
+		ObjCursor<Entry<T, Integer>> iter = elements.entrySet().cursor();
 		
-		while(iter.hasNext()) {
-			Entry<T, MutableInteger> elem = iter.next();
+		while(iter.moveNext()) {
+			Entry<T, Integer> elem = iter.elem();
 			
-			index -= elem.getValue().get();
+			index -= elem.getValue();
 			
 			if(index <= 0)
 				return elem.getKey();

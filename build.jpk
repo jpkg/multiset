@@ -1,3 +1,3 @@
-dependencies=test-manager;mutable
+dependencies=test-manager;mutable;minerguy31/koloboke-bin
 maintype-test=jpkg.collection.set.MultiSetTest
 output-jar=bin/multiset-${branch}.jar
